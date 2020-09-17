@@ -5,7 +5,7 @@ import './styles.css';
 import useDeviceMode from './hooks/useDeviceMode';
 import Overlay from './components/Overlay';
 import View1 from './views/View1';
-import View2 from './views/View2';
+import View3 from './views/View3';
 
 const Viewport = styled.div`
   position: relative;
@@ -32,21 +32,6 @@ export default function App() {
         <h4>Device mode: {deviceMode}</h4>
       </div>
       <Viewport>
-        <button onClick={showOverlay}>Show overlay</button>
-        <Overlay
-          visible={isOverlayVisible}
-          hide={hideOverlay}
-          width={{ tablet: 440 }}
-          height={{ tablet: 536, desktop: 328 }}
-          view={{
-            title: 'Gifts',
-            subtitle: '132 Gifts',
-            content: View1
-          }}
-        />
-      </Viewport>
-      <br />
-      <Viewport>
         <button
           onClick={() => {
             setIsOverlayVisible2(true);
@@ -64,7 +49,22 @@ export default function App() {
           view={{
             title: 'Gifts',
             subtitle: '132 Gifts',
-            content: View2
+            content: View3
+          }}
+        />
+      </Viewport>
+      <br />
+      <Viewport>
+        <button onClick={showOverlay}>Show overlay</button>
+        <Overlay
+          visible={isOverlayVisible}
+          hide={hideOverlay}
+          width={{ tablet: 440 }}
+          height={{ tablet: 536, desktop: 328 }}
+          view={{
+            title: 'Gifts',
+            subtitle: '132 Gifts',
+            content: View1
           }}
         />
       </Viewport>

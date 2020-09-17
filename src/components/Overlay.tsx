@@ -108,24 +108,27 @@ const CloseButton = styled.div`
 const OverlayContentView = styled.div`
   position: relative;
   display: flex;
-  /* flex-direction: row; */
-  /* align-items: flex-start; */
-  height: 100%;
-  transition: height 0.5s, max-height 0.5s;
+  transition: height 0.5s;
+
   overflow: hidden;
 
   ${desktop} {
     /* height: 99999px; */
   }
 `;
-const OverlayContent = styled.div<{ visible: boolean }>`
-  min-width: ${(props) => (props.visible ? 100 : 0)}%;
+const OverlayContent = styled.div<{ visible?: boolean }>`
+  flex: ${(props) => (props.visible ? 1 : 0)};
+  width: 100%;
   max-height: ${(props) => !props.visible && '0'};
+  opacity: ${(props) => (props.visible ? 1 : 0)};
+
   background-color: #fff;
   text-align: center;
   overflow: auto;
-  background-color: green;
-  transition: height 0.5s, max-height 0.5s;
+  transition: opacity 0.5s;
+`;
+const OverlayContentContainer = styled.div`
+  max-height: 100%;
 `;
 
 interface DimensionProps {
@@ -153,6 +156,14 @@ const Overlay: React.FC<Props> = (props) => {
   };
 
   const pushState = (view: ViewProps) => {
+    const currrentHeight = overlayContentViewEl.current.getBoundingClientRect()
+      .height;
+    overlayContentViewEl.current.style.height = currrentHeight + 'px';
+    console.log(
+      '>>> Current view height =',
+      overlayContentViewEl.current.style.height
+    );
+    // contentHeights.current = [...contentHeights.current, currrentHeight];
     const nextHistory = [...ref.current, createHistoryObject(view)];
     ref.current = nextHistory;
     setHistory(nextHistory);
@@ -164,15 +175,55 @@ const Overlay: React.FC<Props> = (props) => {
 
   const initialHistory = [createHistoryObject(props.view)];
   const [history, setHistory] = useState(initialHistory);
+  const [currentViewIdx, setCurrentViewIdx] = useState(0);
   const ref = useRef(initialHistory);
+  const contentHeights = useRef([]);
   const overlayContentViewEl = useRef<HTMLDivElement>(null);
   const overlayContentEl = useRef<HTMLDivElement>(null);
+  const overlayContentContainerEl = useRef<HTMLDivElement>(null);
   const { visibility, triggerHide, unmount } = useDelayedUnmount(
     props.visible,
     props.hide
   );
 
+  useEffect(() => {
+    const previousViewIdx = currentViewIdx;
+    const nextViewIdx = history.length - 1;
+    setCurrentViewIdx(nextViewIdx);
+
+    // Go back
+    if (nextViewIdx < previousViewIdx && overlayContentViewEl.current) {
+      requestAnimationFrame(() => {
+        console.log('>>> go back transition', overlayContentViewEl.current);
+        overlayContentViewEl.current.style.height =
+          contentHeights.current[contentHeights.current.length - 1] + 'px';
+      });
+      return;
+    }
+
+    // Go forward
+    requestAnimationFrame(() => {
+      if (overlayContentContainerEl.current) {
+        const nextHeight = overlayContentContainerEl.current.getBoundingClientRect()
+          .height;
+        if (nextHeight === 0) {
+          return;
+        }
+        // console.log(
+        //   '>>> Next view height =',
+        //   overlayContentContainerEl.current.getBoundingClientRect().height
+        // );
+        overlayContentViewEl.current.style.height = nextHeight + 'px';
+        contentHeights.current.push(nextHeight);
+      }
+    });
+  }, [history]);
+
   const goBack = () => {
+    overlayContentViewEl.current.style.height =
+      contentHeights.current[contentHeights.current.length - 1] + 'px';
+    contentHeights.current.splice(contentHeights.current.length - 1, 1);
+
     const nextHistory = [...ref.current];
     nextHistory.splice(nextHistory.length - 1, 1);
     ref.current = nextHistory;
@@ -186,6 +237,8 @@ const Overlay: React.FC<Props> = (props) => {
     const initialHistory = ref.current.slice(0, 1);
     ref.current = initialHistory;
     setHistory(initialHistory);
+
+    contentHeights.current = [];
   };
 
   if (!props.visible) {
@@ -218,15 +271,25 @@ const Overlay: React.FC<Props> = (props) => {
             <Close />
           </CloseButton>
         </OverlayHeader>
-        <OverlayContentView ref={overlayContentViewEl} className="HERE123">
+        <OverlayContentView
+          ref={overlayContentViewEl}
+          onTransitionEnd={() => {
+            overlayContentViewEl.current.style.height = '';
+          }}
+        >
           {history.map((item, index) => (
             <OverlayContent
               key={index}
               data-index={index}
               ref={overlayContentEl}
-              visible={history.length - 1 === index}
+              visible={currentViewIdx === index}
             >
-              {item.renderedView}
+              <OverlayContentContainer
+                ref={overlayContentContainerEl}
+                className="overlay-content-container"
+              >
+                {item.renderedView}
+              </OverlayContentContainer>
             </OverlayContent>
           ))}
         </OverlayContentView>
