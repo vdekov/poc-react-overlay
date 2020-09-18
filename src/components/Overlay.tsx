@@ -116,10 +116,14 @@ const OverlayContentView = styled.div`
     /* height: 99999px; */
   }
 `;
-const OverlayContent = styled.div<{ visible?: boolean }>`
+const OverlayContent = styled.div<{
+  visible?: boolean;
+  isInTransition: boolean;
+}>`
   flex: ${(props) => (props.visible ? 1 : 0)};
   width: 100%;
-  max-height: ${(props) => !props.visible && '0'};
+  /* max-height: ${(props) => !props.visible && '0'}; */
+  max-height: ${(props) => !props.isInTransition && !props.visible && '0'};
   opacity: ${(props) => (props.visible ? 1 : 0)};
 
   background-color: #fff;
@@ -155,15 +159,48 @@ const Overlay: React.FC<Props> = (props) => {
     };
   };
 
+  const createDummyView = (view) => {
+    const dummyViewContainer = document.createElement('div');
+    dummyViewContainerRef.current = dummyViewContainer;
+    dummyViewContainer.classList.add('dummy-view-container');
+    dummyViewContainer.style.position = 'absolute';
+    dummyViewContainer.style.right = '0px';
+    dummyViewContainer.style.bottom = '0px';
+    dummyViewContainer.style.left = '0px';
+    dummyViewContainer.style.display = 'flex';
+    dummyViewContainer.style.alignItems = 'flex-start';
+    dummyViewContainer.style.justifyContent = 'center';
+    dummyViewContainer.style.maxHeight = 'calc(100vh - 50px - 54px)'; // FIX THIS HARDCODED VALUE
+    dummyViewContainer.style.overflow = 'auto';
+    dummyViewContainer.style.backgroundColor = 'red';
+    document.body.appendChild(dummyViewContainer);
+
+    const contentCopy = view.cloneNode(true);
+    dummyViewContainer.appendChild(contentCopy);
+
+    // Set dimensions to the copied container
+    // const contentCopyElement = dummyViewContainer.children[0] as HTMLElement;
+    // contentCopyElement.style.width =
+    //   overlayContentViewEl.current.getBoundingClientRect().width + 'px';
+    // contentCopyElement.style.height =
+    //   overlayContentViewEl.current.getBoundingClientRect().height + 'px';
+
+    nextViewHeight.current = dummyViewContainer.getBoundingClientRect().height;
+    console.log('>>> dummy view height =', nextViewHeight.current);
+    destroyDummyView();
+  };
+
+  const destroyDummyView = () => {
+    dummyViewContainerRef.current.remove();
+  };
+
   const pushState = (view: ViewProps) => {
-    const currrentHeight = overlayContentViewEl.current.getBoundingClientRect()
-      .height;
-    overlayContentViewEl.current.style.height = currrentHeight + 'px';
-    console.log(
-      '>>> Current view height =',
-      overlayContentViewEl.current.style.height
-    );
-    // contentHeights.current = [...contentHeights.current, currrentHeight];
+    // Set fixed height based on the current view
+    currentViewHeight.current = overlayContentViewEl.current.getBoundingClientRect().height;
+    overlayContentViewEl.current.style.height =
+      currentViewHeight.current + 'px';
+    setIsInTransition(true);
+
     const nextHistory = [...ref.current, createHistoryObject(view)];
     ref.current = nextHistory;
     setHistory(nextHistory);
@@ -176,8 +213,12 @@ const Overlay: React.FC<Props> = (props) => {
   const initialHistory = [createHistoryObject(props.view)];
   const [history, setHistory] = useState(initialHistory);
   const [currentViewIdx, setCurrentViewIdx] = useState(0);
+  const [isInTransition, setIsInTransition] = useState(false);
+  const overlayContentRefs = [];
   const ref = useRef(initialHistory);
-  const contentHeights = useRef([]);
+  const currentViewHeight = useRef(0);
+  const nextViewHeight = useRef(0);
+  const dummyViewContainerRef = useRef<HTMLDivElement>(null);
   const overlayContentViewEl = useRef<HTMLDivElement>(null);
   const overlayContentEl = useRef<HTMLDivElement>(null);
   const overlayContentContainerEl = useRef<HTMLDivElement>(null);
@@ -189,40 +230,46 @@ const Overlay: React.FC<Props> = (props) => {
   useEffect(() => {
     const previousViewIdx = currentViewIdx;
     const nextViewIdx = history.length - 1;
-    setCurrentViewIdx(nextViewIdx);
 
-    // Go back
-    if (nextViewIdx < previousViewIdx && overlayContentViewEl.current) {
-      requestAnimationFrame(() => {
-        console.log('>>> go back transition', overlayContentViewEl.current);
-        overlayContentViewEl.current.style.height =
-          contentHeights.current[contentHeights.current.length - 1] + 'px';
-      });
+    if (previousViewIdx === nextViewIdx) {
       return;
     }
 
-    // Go forward
-    requestAnimationFrame(() => {
-      if (overlayContentContainerEl.current) {
-        const nextHeight = overlayContentContainerEl.current.getBoundingClientRect()
-          .height;
-        if (nextHeight === 0) {
-          return;
-        }
-        // console.log(
-        //   '>>> Next view height =',
-        //   overlayContentContainerEl.current.getBoundingClientRect().height
-        // );
-        overlayContentViewEl.current.style.height = nextHeight + 'px';
-        contentHeights.current.push(nextHeight);
+    if (previousViewIdx < nextViewIdx) {
+      console.log('>>> go forward');
+      // If there are no real calculated height - juse prevent any further actions
+      if (currentViewHeight.current === 0) {
+        return;
       }
-    });
+      console.log(
+        '>>> currentViewHeight =',
+        currentViewHeight.current,
+        overlayContentRefs[nextViewIdx]
+      );
+      createDummyView(overlayContentRefs[nextViewIdx]);
+      // console.log(overlayContentViewEl.current);
+      // requestAnimationFrame(() => {
+      overlayContentViewEl.current.style.height = nextViewHeight.current + 'px';
+      // });
+    } else {
+      // console.log('>>> go back');
+      // console.log('>>> currentViewHeight =', currentViewHeight.current);
+      createDummyView(overlayContentRefs[currentViewIdx - 1]);
+      overlayContentViewEl.current.style.height = nextViewHeight.current + 'px';
+    }
+
+    setCurrentViewIdx(nextViewIdx);
   }, [history]);
 
   const goBack = () => {
+    if (isInTransition) {
+      return;
+    }
+    // Set fixed height based on the current view
+    currentViewHeight.current = overlayContentViewEl.current.getBoundingClientRect().height;
     overlayContentViewEl.current.style.height =
-      contentHeights.current[contentHeights.current.length - 1] + 'px';
-    contentHeights.current.splice(contentHeights.current.length - 1, 1);
+      currentViewHeight.current + 'px';
+    setIsInTransition(true);
 
     const nextHistory = [...ref.current];
     nextHistory.splice(nextHistory.length - 1, 1);
@@ -231,14 +278,11 @@ const Overlay: React.FC<Props> = (props) => {
   };
 
   const destroy = (event) => {
-    console.log('destroy');
     unmount();
     // Make sure to reset the overlay state to the initial view.
     const initialHistory = ref.current.slice(0, 1);
     ref.current = initialHistory;
     setHistory(initialHistory);
-
-    contentHeights.current = [];
   };
 
   if (!props.visible) {
@@ -275,6 +319,9 @@ const Overlay: React.FC<Props> = (props) => {
           ref={overlayContentViewEl}
           onTransitionEnd={() => {
             overlayContentViewEl.current.style.height = '';
+            currentViewHeight.current = 0;
+            nextViewHeight.current = 0;
+            setIsInTransition(false);
           }}
         >
           {history.map((item, index) => (
@@ -283,9 +330,13 @@ const Overlay: React.FC<Props> = (props) => {
               data-index={index}
               ref={overlayContentEl}
               visible={currentViewIdx === index}
+              isInTransition={isInTransition}
             >
               <OverlayContentContainer
-                ref={overlayContentContainerEl}
+                // ref={overlayContentContainerEl}
+                ref={(overlayContentContainerEl) =>
+                  (overlayContentRefs[index] = overlayContentContainerEl)
+                }
                 className="overlay-content-container"
               >
                 {item.renderedView}

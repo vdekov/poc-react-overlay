@@ -8,7 +8,7 @@ type Props = ContentComponentProps;
 const View2: React.FC<Props> = ({ pushState }) => {
   return (
     <div>
-      <span>Hello from View #2</span>
+      <span>(NEW) Hello from View #2</span>
       <br />
       <button
         onClick={() => {
@@ -26,7 +26,7 @@ const View2: React.FC<Props> = ({ pushState }) => {
         Suspendisse dictum orci nisi, a dictum nibh rhoncus at. Fusce faucibus
         blandit. Donec tempor dapibus libero et commodo.
       </div>
-      <div>
+      {/* <div>
         Suspendisse dictum orci nisi, a dictum nibh rhoncus at. Fusce sodales
         urna quam, rhoncus pellentesque enim pulvinar nec. Praesent volutpat
         faucibus blandit. Donec tempor dapibus libero et commodo.
@@ -35,7 +35,7 @@ const View2: React.FC<Props> = ({ pushState }) => {
         Suspendisse dictum orci nisi, a dictum nibh rhoncus at. Fusce sodales
         urna quam, rhoncus pellentesque enim pulvinar nec. Praesent volutpat
         faucibus blandit. Donec tempor dapibus libero et commodo.
-      </div>
+      </div> */}
     </div>
   );
 };

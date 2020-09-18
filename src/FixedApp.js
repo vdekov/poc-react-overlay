@@ -19,7 +19,6 @@ const Viewport = styled.div`
 export default function App() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(true);
   const [isOverlayVisible2, setIsOverlayVisible2] = useState(true);
-  const deviceMode = useDeviceMode();
   const showOverlay = () => {
     setIsOverlayVisible(true);
   };
@@ -28,33 +27,27 @@ export default function App() {
   };
   return (
     <>
-      <div className="App">
-        <h4>Device mode: {deviceMode}</h4>
-      </div>
+      {/* <button
+        onClick={() => {
+          setIsOverlayVisible2(true);
+        }}
+      >
+        Show overlay
+      </button>
+      <Overlay
+        visible={isOverlayVisible2}
+        hide={() => {
+          setIsOverlayVisible2(false);
+        }}
+        width={{ tablet: 440 }}
+        height={{ desktop: 328 }}
+        view={{
+          title: 'Gifts',
+          subtitle: '132 Gifts',
+          content: View3
+        }}
+      /> */}
       <Viewport>
-        <button
-          onClick={() => {
-            setIsOverlayVisible2(true);
-          }}
-        >
-          Show overlay
-        </button>
-        <Overlay
-          visible={isOverlayVisible2}
-          hide={() => {
-            setIsOverlayVisible2(false);
-          }}
-          width={{ tablet: 440 }}
-          height={{ desktop: 328 }}
-          view={{
-            title: 'Gifts',
-            subtitle: '132 Gifts',
-            content: View3
-          }}
-        />
-      </Viewport>
-      <br />
-      {/* <Viewport>
         <button onClick={showOverlay}>Show overlay</button>
         <Overlay
           visible={isOverlayVisible}
@@ -67,7 +60,7 @@ export default function App() {
             content: View1
           }}
         />
-      </Viewport> */}
+      </Viewport>
     </>
   );
 }

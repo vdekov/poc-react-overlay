@@ -17,14 +17,17 @@ const View3: React.FC<Props> = ({ pushState }) => {
       >
         Go to View #2
       </button>
-      <div>
+      {/* <div>
         Suspendisse dictum orci nisi, a dictum nibh rhoncus at. Fusce sodales
         urna quam, rhoncus pellentesque enim pulvinar nec. Praesent volutpat
         faucibus blandit. Donec tempor dapibus libero et commodo.blandit. Donec
         tempor dapibus libero et commodo.blandit. Donec tempor dapibus libero et
         commodo.blandit. Donec tempor dapibus libero et commodo.blandit. Donec
-        tempor dapibus libero et commodo.
-      </div>
+        tempor dapibus libero et commodo. Donec tempor dapibus libero et
+        commodo.blandit. Donec tempor dapibus libero et commodo. Donec tempor
+        dapibus libero et commodo.blandit. Donec tempor dapibus libero et
+        commodo.
+      </div> */}
     </div>
   );
 };
