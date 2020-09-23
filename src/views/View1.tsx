@@ -16,7 +16,7 @@ const View1: React.FC<Props> = (props) => {
     props.pushState({ content: View3 });
   };
   const goToView4 = () => {
-    props.pushState({ content: View4 });
+    props.pushState({ content: View4, preventClose: true });
   };
 
   const increment = () => {

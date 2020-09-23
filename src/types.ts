@@ -4,6 +4,7 @@ export interface ViewProps {
   content:
     | React.FunctionComponent<ContentComponentProps>
     | React.ComponentClass<ContentComponentProps>;
+  preventClose?: boolean;
 }
 
 export interface ContentComponentProps {

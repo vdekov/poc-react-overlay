@@ -7,10 +7,11 @@ import { ViewProps, ContentComponentProps } from '../types';
 import { Chevron, Close } from './Icons';
 
 const OVERLAY_TOP_OFFSET = 80;
+const TRANSITION_DURATION = '0.5s';
 
 const Container = styled.div``;
 const Backdrop = styled.div<{ visible: boolean }>`
-  position: absolute;
+  position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
@@ -24,7 +25,7 @@ const OverlayWrapper = styled.div<{
   height: DimensionProps;
   visible: boolean;
 }>`
-  position: absolute;
+  position: fixed;
   right: 0;
   bottom: 0;
   left: 0;
@@ -34,11 +35,11 @@ const OverlayWrapper = styled.div<{
   height: auto;
   max-height: ${(props) =>
     props.visible ? `calc(100% - ${OVERLAY_TOP_OFFSET}px)` : 0};
-  border-radius: 8px 8px 0px 0px;
-  background-color: #fff;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
   box-shadow: 0px 1px 2px rgba(31, 32, 33, 0.1),
     0px 2px 2px rgba(31, 32, 33, 0.05), 0px 4px 12px rgba(31, 32, 33, 0.3);
-  transition: max-height 0.5s;
+  transition: max-height ${TRANSITION_DURATION};
 
   /* Tablet */
   ${tablet} {
@@ -48,11 +49,21 @@ const OverlayWrapper = styled.div<{
     left: 50%;
     max-width: ${(props) => props.width.tablet}px;
     max-height: ${(props) => props.height.tablet}px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
     transform: translate(-50%, -50%);
-    border-radius: 8px;
     opacity: ${(props) => (props.visible ? 1 : 0)};
-    transition: opacity 0.5s;
-    overflow: hidden;
+    transition: opacity ${TRANSITION_DURATION};
+  }
+
+  &:before {
+    content: '';
+    display: block;
+    width: calc(100% + 30px);
+    height: calc(100% + 30px);
+    transform: translate(-15px, -15px);
+    position: absolute;
+    z-index: -1;
   }
 `;
 const OverlayHeader = styled.div`
@@ -60,6 +71,9 @@ const OverlayHeader = styled.div`
   align-items: center;
   min-height: 54px;
   border-bottom: 2px solid rgba(45, 40, 103, 0.1);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  background-color: #fff;
 `;
 const BackButton = styled.div`
   position: relative;
@@ -102,7 +116,12 @@ const OverlayContentView = styled.div`
   position: relative;
   display: flex;
   overflow: hidden;
-  transition: height 0.5s;
+  transition: height ${TRANSITION_DURATION};
+
+  ${tablet} {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
 `;
 const OverlayContent = styled.div<{
   visible: boolean;
@@ -115,7 +134,7 @@ const OverlayContent = styled.div<{
   text-align: center;
   overflow: auto;
   opacity: ${(props) => (props.visible ? 1 : 0)};
-  transition: opacity 0.5s;
+  transition: opacity ${TRANSITION_DURATION};
 `;
 const OverlayContentContainer = styled.div`
   max-height: 100%;
@@ -140,7 +159,8 @@ const Overlay: React.FC<Props> = (props) => {
       subtitle: view.subtitle,
       renderedView: React.createElement<ContentComponentProps>(view.content, {
         ...contentProps
-      })
+      }),
+      preventClose: view.preventClose || false
     };
   };
 
@@ -211,6 +231,14 @@ const Overlay: React.FC<Props> = (props) => {
     setCurrentViewIdx(nextViewIdx);
   }, [history]);
 
+  const closeOverlay = () => {
+    // Do not allow the user to close the overlay if there is a blocker flag.
+    if (history[history.length - 1].preventClose) {
+      return;
+    }
+    triggerHide();
+  };
+
   const goBack = () => {
     if (isInTransition) {
       return;
@@ -239,9 +267,9 @@ const Overlay: React.FC<Props> = (props) => {
   const destroy = () => {
     unmount();
     // Make sure to reset the overlay state to the initial view.
-    const initialHistory = ref.current.slice(0, 1);
     ref.current = initialHistory;
     setHistory(initialHistory);
+    setCurrentViewIdx(0);
   };
 
   if (!props.visible) {
@@ -251,7 +279,7 @@ const Overlay: React.FC<Props> = (props) => {
   return (
     <Container>
       <Backdrop
-        onClick={triggerHide}
+        onClick={closeOverlay}
         visible={visibility}
         onTransitionEnd={destroy}
       />
@@ -270,7 +298,7 @@ const Overlay: React.FC<Props> = (props) => {
             <Title>{history[history.length - 1].title}</Title>
             <Subtitle>{history[history.length - 1].subtitle}</Subtitle>
           </HeaderTexts>
-          <CloseButton onClick={triggerHide}>
+          <CloseButton onClick={closeOverlay}>
             <Close />
           </CloseButton>
         </OverlayHeader>

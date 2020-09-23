@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react';
 
-import {
-  mobileQuery,
-  tabletQuery,
-  desktopQuery
-} from '../utils/style_breakpoints';
+import { mobileQuery, tabletQuery } from '../utils/style_breakpoints';
 
 const Breakpoints = {
   mobile: 600,
@@ -14,7 +10,6 @@ const Breakpoints = {
 const useDeviceMode = () => {
   const mobileQueryList = window.matchMedia(mobileQuery);
   const tabletQueryList = window.matchMedia(tabletQuery);
-  const desktopQueryList = window.matchMedia(desktopQuery);
 
   const mobileScreenTest = (event) => {
     if (event.matches) {
@@ -26,28 +21,17 @@ const useDeviceMode = () => {
       setMode('tablet');
     }
   };
-  const desktopScreenTest = (event) => {
-    if (event.matches) {
-      setMode('desktop');
-    }
-  };
 
-  const initialMode = mobileQueryList.matches
-    ? 'mobile'
-    : tabletQueryList.matches
-    ? 'tablet'
-    : 'desktop';
+  const initialMode = mobileQueryList.matches ? 'mobile' : 'tablet';
   const [mode, setMode] = useState(initialMode);
 
   useEffect(() => {
     mobileQueryList.addEventListener('change', mobileScreenTest);
     tabletQueryList.addEventListener('change', tabletScreenTest);
-    desktopQueryList.addEventListener('change', desktopScreenTest);
 
     return () => {
       mobileQueryList.removeEventListener('change', mobileScreenTest);
       tabletQueryList.removeEventListener('change', tabletScreenTest);
-      desktopQueryList.removeEventListener('change', desktopScreenTest);
     };
   }, []);
 
