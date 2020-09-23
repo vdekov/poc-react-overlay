@@ -10,7 +10,7 @@ import View3 from './views/View3';
 const Viewport = styled.div`
   position: relative;
   width: 100%;
-  height: 580px;
+  height: 700px;
   border: 1px solid #000;
   background-color: #eee;
   overflow: hidden;
@@ -53,7 +53,7 @@ export default function App() {
           visible={isOverlayVisible}
           hide={hideOverlay}
           width={{ tablet: 440 }}
-          height={{ tablet: 536, desktop: 328 }}
+          height={{ tablet: 536 }}
           view={{
             title: 'Gifts',
             subtitle: '132 Gifts',

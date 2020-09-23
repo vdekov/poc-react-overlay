@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 
-import { tablet, desktop } from '../utils/style_breakpoints';
+import { tablet } from '../utils/style_breakpoints';
 import useDelayedUnmount from '../hooks/useDelayedUnmount';
 import { ViewProps, ContentComponentProps } from '../types';
 import { Chevron, Close } from './Icons';
+
+const OVERLAY_TOP_OFFSET = 80;
 
 const Container = styled.div``;
 const Backdrop = styled.div<{ visible: boolean }>`
@@ -16,10 +18,6 @@ const Backdrop = styled.div<{ visible: boolean }>`
   background-color: #bbb;
   opacity: ${(props) => (props.visible ? 0.8 : 0)};
   transition: opacity 0.5s;
-
-  ${desktop} {
-    display: none;
-  }
 `;
 const OverlayWrapper = styled.div<{
   width: DimensionProps;
@@ -33,33 +31,28 @@ const OverlayWrapper = styled.div<{
   display: flex;
   flex-direction: column;
   width: 100%;
-  // height: ${(props) => (props.visible ? 'auto' : '0%')};
   height: auto;
-  max-height: ${(props) => (props.visible ? 'calc(100% - 50px)' : 0)};
+  max-height: ${(props) =>
+    props.visible ? `calc(100% - ${OVERLAY_TOP_OFFSET}px)` : 0};
   border-radius: 8px 8px 0px 0px;
   background-color: #fff;
   box-shadow: 0px 1px 2px rgba(31, 32, 33, 0.1),
     0px 2px 2px rgba(31, 32, 33, 0.05), 0px 4px 12px rgba(31, 32, 33, 0.3);
-  transition: max-height 0.5s, height 0.5s;
+  transition: max-height 0.5s;
 
   /* Tablet */
   ${tablet} {
     top: 50%;
+    right: auto;
+    bottom: auto;
     left: 50%;
     max-width: ${(props) => props.width.tablet}px;
-    height: 100%;
     max-height: ${(props) => props.height.tablet}px;
     transform: translate(-50%, -50%);
     border-radius: 8px;
     opacity: ${(props) => (props.visible ? 1 : 0)};
     transition: opacity 0.5s;
-  }
-
-  ${desktop} {
-    position: static;
-    max-height: ${(props) => props.height.desktop}px;
-    border-radius: 8px;
-    transition: height 0.01s;
+    overflow: hidden;
   }
 `;
 const OverlayHeader = styled.div`
@@ -110,10 +103,6 @@ const OverlayContentView = styled.div`
   display: flex;
   overflow: hidden;
   transition: height 0.5s;
-
-  ${desktop} {
-    /* height: 99999px; */
-  }
 `;
 const OverlayContent = styled.div<{
   visible: boolean;
@@ -134,7 +123,6 @@ const OverlayContentContainer = styled.div`
 
 interface DimensionProps {
   tablet?: number;
-  desktop?: number;
 }
 interface OwnProps {
   visible: boolean;
@@ -167,10 +155,11 @@ const Overlay: React.FC<Props> = (props) => {
     dummyViewContainer.style.display = 'flex';
     dummyViewContainer.style.alignItems = 'flex-start';
     dummyViewContainer.style.justifyContent = 'center';
-    dummyViewContainer.style.maxHeight = 'calc(100vh - 50px - 54px)'; // FIX THIS HARDCODED VALUE
+    dummyViewContainer.style.maxHeight = `calc(100vh - ${OVERLAY_TOP_OFFSET} - ${Math.round(
+      overlayHeaderEl.current.getBoundingClientRect().height
+    )})`;
     dummyViewContainer.style.overflow = 'auto';
     dummyViewContainer.style.visibility = 'hidden';
-    dummyViewContainer.style.backgroundColor = 'red';
     document.body.appendChild(dummyViewContainer);
 
     const contentCopy = view.cloneNode(true);
@@ -198,6 +187,7 @@ const Overlay: React.FC<Props> = (props) => {
   const overlayContentRefs = [];
   const ref = useRef(initialHistory);
   const nextViewHeight = useRef(0);
+  const overlayHeaderEl = useRef<HTMLDivElement>(null);
   const overlayContentViewEl = useRef<HTMLDivElement>(null);
   const { visibility, triggerHide, unmount } = useDelayedUnmount(
     props.visible,
@@ -208,7 +198,11 @@ const Overlay: React.FC<Props> = (props) => {
     const previousViewIdx = currentViewIdx;
     const nextViewIdx = history.length - 1;
 
-    if (previousViewIdx === nextViewIdx) {
+    if (
+      previousViewIdx === nextViewIdx ||
+      !overlayContentRefs[nextViewIdx] ||
+      !overlayContentViewEl.current
+    ) {
       return;
     }
 
@@ -242,7 +236,7 @@ const Overlay: React.FC<Props> = (props) => {
     setIsInTransition(false);
   };
 
-  const destroy = (event) => {
+  const destroy = () => {
     unmount();
     // Make sure to reset the overlay state to the initial view.
     const initialHistory = ref.current.slice(0, 1);
@@ -266,7 +260,7 @@ const Overlay: React.FC<Props> = (props) => {
         height={props.height}
         visible={visibility}
       >
-        <OverlayHeader>
+        <OverlayHeader ref={overlayHeaderEl}>
           {history.length > 1 && (
             <BackButton onClick={goBack}>
               <Chevron />

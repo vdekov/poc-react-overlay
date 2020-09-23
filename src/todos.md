@@ -1,9 +1,9 @@
 - ~~reset views state on close~~
-- handle dynamic views height
+- ~~handle dynamic views height~~
 - prevent closing with param
 - ~~handle multi views navigation - back button~~
 - desktop - default behavior popup
-  - auto behaivor
+  - tablet behaivor
   - add params to overwrite
 - try to avoid overflow: hidden
 - ~~add ellipsis titles~~
