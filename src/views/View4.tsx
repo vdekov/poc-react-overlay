@@ -4,9 +4,11 @@ import { ContentComponentProps } from '../types';
 
 type Props = ContentComponentProps;
 
-const View4: React.FC<Props> = () => {
+const View4: React.FC<Props> = ({ back }) => {
   return (
-    <div style={{ width: '100%', height: '400px', backgroundColor: 'red' }} />
+    <div style={{ width: '100%', height: '400px', backgroundColor: 'red' }}>
+      <button onClick={back}>Go back</button>
+    </div>
   );
 };
 

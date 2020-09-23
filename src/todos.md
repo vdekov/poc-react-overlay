@@ -8,5 +8,5 @@
 - ~~add ellipsis titles~~
 - ~~extend modal popup click area to prevent backdrop click (close)~~
 - set fixed dimensions
-- pass `goBack` function to the nested views
-- prevent close confirmation in the views
+- ~~pass `back` function to the nested views~~
+- ~~prevent close confirmation in the views~~

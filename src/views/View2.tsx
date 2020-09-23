@@ -19,12 +19,12 @@ const View2: React.FC<Props> = ({ pushState }) => {
       </button>
       <div>
         Suspendisse dictum orci nisi, a dictum nibh rhoncus at. Fusce sodales
-        urna quam, rhoncus pellentesque enim pulvinar nec. Praesent volutpat
-        faucibus blandit. Donec tempor dapibus libero et commodo.
+        urna quam, rhoncus nec. Praesent volutpat faucibus blandit. Donec tempor
+        dapibus libero et commodo.
       </div>
       <div>
         Suspendisse dictum orci nisi, a dictum nibh rhoncus at. Fusce faucibus
-        blandit. Donec tempor dapibus libero et commodo.
+        blandit. Donec tempor dapibus libero et.
       </div>
       {/* <div>
         Suspendisse dictum orci nisi, a dictum nibh rhoncus at. Fusce sodales

@@ -66,8 +66,8 @@ const OverlayWrapper = styled.div<{
     z-index: -1;
   }
 `;
-const OverlayHeader = styled.div`
-  display: flex;
+const OverlayHeader = styled.div<{ visible: boolean }>`
+  display: ${(props) => (props.visible ? 'flex' : 'none')};
   align-items: center;
   min-height: 54px;
   border-bottom: 2px solid rgba(45, 40, 103, 0.1);
@@ -112,11 +112,13 @@ const CloseButton = styled.div`
   height: 100%;
   cursor: pointer;
 `;
-const OverlayContentView = styled.div`
+const OverlayContentView = styled.div<{ displayHeader: boolean }>`
   position: relative;
   display: flex;
   overflow: hidden;
   transition: height ${TRANSITION_DURATION};
+  border-top-left-radius: ${(props) => !props.displayHeader && '8px'};
+  border-top-right-radius: ${(props) => !props.displayHeader && '8px'};
 
   ${tablet} {
     border-bottom-left-radius: 8px;
@@ -160,7 +162,8 @@ const Overlay: React.FC<Props> = (props) => {
       renderedView: React.createElement<ContentComponentProps>(view.content, {
         ...contentProps
       }),
-      preventClose: view.preventClose || false
+      preventClose: view.preventClose || false,
+      displayHeader: view.displayHeader === false ? false : true
     };
   };
 
@@ -196,15 +199,27 @@ const Overlay: React.FC<Props> = (props) => {
     setHistory(nextHistory);
   };
 
+  const back = () => {
+    goBack();
+  };
+
+  const confirmationOnClose = (confirmation) => {
+    overlayContentRefs.current[
+      currentViewIdx
+    ].confirmationOnClose = confirmation;
+  };
+
   const contentProps = {
-    pushState
+    pushState,
+    back,
+    confirmationOnClose
   };
 
   const initialHistory = [createHistoryObject(props.view)];
   const [history, setHistory] = useState(initialHistory);
   const [currentViewIdx, setCurrentViewIdx] = useState(0);
   const [isInTransition, setIsInTransition] = useState(false);
-  const overlayContentRefs = [];
+  const overlayContentRefs = useRef([]);
   const ref = useRef(initialHistory);
   const nextViewHeight = useRef(0);
   const overlayHeaderEl = useRef<HTMLDivElement>(null);
@@ -220,13 +235,13 @@ const Overlay: React.FC<Props> = (props) => {
 
     if (
       previousViewIdx === nextViewIdx ||
-      !overlayContentRefs[nextViewIdx] ||
+      !overlayContentRefs.current[nextViewIdx] ||
       !overlayContentViewEl.current
     ) {
       return;
     }
 
-    createDummyContentView(overlayContentRefs[nextViewIdx]);
+    createDummyContentView(overlayContentRefs.current[nextViewIdx]);
     overlayContentViewEl.current.style.height = nextViewHeight.current + 'px';
     setCurrentViewIdx(nextViewIdx);
   }, [history]);
@@ -234,6 +249,14 @@ const Overlay: React.FC<Props> = (props) => {
   const closeOverlay = () => {
     // Do not allow the user to close the overlay if there is a blocker flag.
     if (history[history.length - 1].preventClose) {
+      return;
+    }
+
+    // Make a check if we need to ask the user for confirmation before to close the overlay.
+    if (overlayContentRefs.current[currentViewIdx].confirmationOnClose) {
+      if (window.confirm('Are you sure you want to close the overlay?')) {
+        triggerHide();
+      }
       return;
     }
     triggerHide();
@@ -288,7 +311,10 @@ const Overlay: React.FC<Props> = (props) => {
         height={props.height}
         visible={visibility}
       >
-        <OverlayHeader ref={overlayHeaderEl}>
+        <OverlayHeader
+          ref={overlayHeaderEl}
+          visible={history[history.length - 1].displayHeader}
+        >
           {history.length > 1 && (
             <BackButton onClick={goBack}>
               <Chevron />
@@ -304,6 +330,7 @@ const Overlay: React.FC<Props> = (props) => {
         </OverlayHeader>
         <OverlayContentView
           ref={overlayContentViewEl}
+          displayHeader={history[history.length - 1].displayHeader}
           onTransitionEnd={resetTransitionState}
         >
           {history.map((item, index) => (
@@ -315,7 +342,9 @@ const Overlay: React.FC<Props> = (props) => {
             >
               <OverlayContentContainer
                 ref={(overlayContentContainerEl) =>
-                  (overlayContentRefs[index] = overlayContentContainerEl)
+                  (overlayContentRefs.current[
+                    index
+                  ] = overlayContentContainerEl)
                 }
               >
                 {item.renderedView}
