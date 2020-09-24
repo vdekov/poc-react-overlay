@@ -10,7 +10,11 @@ type Props = ContentComponentProps;
 const View1: React.FC<Props> = (props) => {
   const [counter, setCounter] = useState(0);
   const goToView2 = () => {
-    props.pushState({ content: View2, title: 'Send a Gift' });
+    props.pushState({
+      content: View2,
+      title: 'Send a Gift',
+      width: { tablet: 200 }
+    });
   };
   const goToView3 = () => {
     props.pushState({ content: View3 });

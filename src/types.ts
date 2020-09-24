@@ -6,10 +6,18 @@ export interface ViewProps {
     | React.ComponentClass<ContentComponentProps>;
   preventClose?: boolean;
   displayHeader?: boolean;
+  width?: DimensionProps;
+  height?: DimensionProps;
 }
 
 export interface ContentComponentProps {
   pushState: (view: ViewProps) => void;
   back: () => void;
   confirmationOnClose: (confirmation: boolean) => void;
+}
+
+export interface DimensionProps {
+  mobile?: number;
+  tablet?: number;
+  desktop?: number;
 }

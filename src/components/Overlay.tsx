@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
+import { Helmet } from 'react-helmet';
 
 import { tablet } from '../utils/style_breakpoints';
 import useDelayedUnmount from '../hooks/useDelayedUnmount';
-import { ViewProps, ContentComponentProps } from '../types';
+import { ViewProps, ContentComponentProps, DimensionProps } from '../types';
 import { Chevron, Close } from './Icons';
 
 const OVERLAY_TOP_OFFSET = 80;
 const TRANSITION_DURATION = '0.5s';
+const DEFAULT_OVERLAY_WIDTH = 400;
+const DEFAULT_OVERLAY_HEIGHT = 400;
 
 const Container = styled.div``;
 const Backdrop = styled.div<{ visible: boolean }>`
@@ -34,7 +37,11 @@ const OverlayWrapper = styled.div<{
   width: 100%;
   height: auto;
   max-height: ${(props) =>
-    props.visible ? `calc(100% - ${OVERLAY_TOP_OFFSET}px)` : 0};
+    props.visible
+      ? props.height.mobile
+        ? `${props.height.mobile}px`
+        : `calc(100% - ${OVERLAY_TOP_OFFSET}px)`
+      : 0};
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
   box-shadow: 0px 1px 2px rgba(31, 32, 33, 0.1),
@@ -47,13 +54,14 @@ const OverlayWrapper = styled.div<{
     right: auto;
     bottom: auto;
     left: 50%;
-    max-width: ${(props) => props.width.tablet}px;
-    max-height: ${(props) => props.height.tablet}px;
+    max-width: ${(props) => props.width.tablet || DEFAULT_OVERLAY_WIDTH}px;
+    max-height: ${(props) => props.height.tablet || DEFAULT_OVERLAY_HEIGHT}px;
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
     transform: translate(-50%, -50%);
     opacity: ${(props) => (props.visible ? 1 : 0)};
-    transition: opacity ${TRANSITION_DURATION};
+    transition: max-width ${TRANSITION_DURATION},
+      max-height ${TRANSITION_DURATION}, opacity ${TRANSITION_DURATION};
   }
 
   &:before {
@@ -121,6 +129,7 @@ const OverlayContentView = styled.div<{ displayHeader: boolean }>`
   border-top-right-radius: ${(props) => !props.displayHeader && '8px'};
 
   ${tablet} {
+    transition: width ${TRANSITION_DURATION}, height ${TRANSITION_DURATION};
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
   }
@@ -142,55 +151,73 @@ const OverlayContentContainer = styled.div`
   max-height: 100%;
 `;
 
-interface DimensionProps {
-  tablet?: number;
-}
 interface OwnProps {
   visible: boolean;
   hide: () => void;
-  width?: DimensionProps;
-  height?: DimensionProps;
   view: ViewProps;
 }
 type Props = OwnProps;
 
 const Overlay: React.FC<Props> = (props) => {
-  const createHistoryObject = (view) => {
+  const createHistoryObject = (viewObj) => {
     return {
-      title: view.title,
-      subtitle: view.subtitle,
-      renderedView: React.createElement<ContentComponentProps>(view.content, {
-        ...contentProps
-      }),
-      preventClose: view.preventClose || false,
-      displayHeader: view.displayHeader === false ? false : true
+      title: viewObj.title,
+      subtitle: viewObj.subtitle,
+      renderedView: React.createElement<ContentComponentProps>(
+        viewObj.content,
+        {
+          ...contentProps
+        }
+      ),
+      preventClose: viewObj.preventClose || false,
+      displayHeader: viewObj.displayHeader === false ? false : true,
+      width: viewObj.width || {},
+      height: viewObj.height || {}
     };
   };
 
-  const createDummyContentView = (view) => {
+  const createDummyContentView = (viewDOM) => {
     // Create absolutely positioned helper element and
     // use it to calculate the height of the next view.
     const dummyViewContainer = document.createElement('div');
     dummyViewContainer.classList.add('dummy-view-container');
-    dummyViewContainer.style.position = 'absolute';
-    dummyViewContainer.style.top = '-9999px';
-    dummyViewContainer.style.zIndex = '-1';
-    dummyViewContainer.style.display = 'flex';
-    dummyViewContainer.style.alignItems = 'flex-start';
-    dummyViewContainer.style.justifyContent = 'center';
-    dummyViewContainer.style.maxHeight = `calc(100vh - ${OVERLAY_TOP_OFFSET} - ${Math.round(
-      overlayHeaderEl.current.getBoundingClientRect().height
-    )})`;
-    dummyViewContainer.style.overflow = 'auto';
-    dummyViewContainer.style.visibility = 'hidden';
     document.body.appendChild(dummyViewContainer);
 
-    const contentCopy = view.cloneNode(true);
+    const contentCopy = viewDOM.cloneNode(true);
     dummyViewContainer.appendChild(contentCopy);
 
     nextViewHeight.current = dummyViewContainer.getBoundingClientRect().height;
     dummyViewContainer.remove();
   };
+
+  // Generate dummy container CSS styles and attach
+  // in the <head> only while there is an active transition.
+  const getDummyViewContainerCss = (viewObj) => `
+    .dummy-view-container {
+      position: absolute;
+      top: -9999px;
+      z-index: -1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      max-height: ${
+        viewObj.height.mobile
+          ? `${viewObj.height.mobile}px`
+          : `calc(100vh - ${OVERLAY_TOP_OFFSET}px - ${Math.round(
+              overlayHeaderEl.current.getBoundingClientRect().height
+            )}px)`
+      };
+      overflow: auto;
+      visibility: hidden;
+    }
+
+    ${tablet} {
+      .dummy-view-container {
+        max-width: ${viewObj.width.tablet || DEFAULT_OVERLAY_WIDTH}px;
+        max-height: ${viewObj.height.tablet || DEFAULT_OVERLAY_HEIGHT}px;
+      }
+    }
+  `;
 
   const pushState = (view: ViewProps) => {
     initTransitionState();
@@ -228,6 +255,9 @@ const Overlay: React.FC<Props> = (props) => {
     props.visible,
     props.hide
   );
+  const currentViewObj = history[history.length - 1];
+  const overlayWidth = { ...initialHistory[0].width, ...currentViewObj.width };
+  const overlayHeight = currentViewObj.height;
 
   useEffect(() => {
     const previousViewIdx = currentViewIdx;
@@ -248,7 +278,7 @@ const Overlay: React.FC<Props> = (props) => {
 
   const closeOverlay = () => {
     // Do not allow the user to close the overlay if there is a blocker flag.
-    if (history[history.length - 1].preventClose) {
+    if (currentViewObj.preventClose) {
       return;
     }
 
@@ -300,60 +330,69 @@ const Overlay: React.FC<Props> = (props) => {
   }
 
   return (
-    <Container>
-      <Backdrop
-        onClick={closeOverlay}
-        visible={visibility}
-        onTransitionEnd={destroy}
-      />
-      <OverlayWrapper
-        width={props.width}
-        height={props.height}
-        visible={visibility}
-      >
-        <OverlayHeader
-          ref={overlayHeaderEl}
-          visible={history[history.length - 1].displayHeader}
+    <>
+      {isInTransition && (
+        <Helmet>
+          <style type="text/css">
+            {getDummyViewContainerCss(currentViewObj)}
+          </style>
+        </Helmet>
+      )}
+      <Container>
+        <Backdrop
+          onClick={closeOverlay}
+          visible={visibility}
+          onTransitionEnd={destroy}
+        />
+        <OverlayWrapper
+          width={overlayWidth}
+          height={overlayHeight}
+          visible={visibility}
         >
-          {history.length > 1 && (
-            <BackButton onClick={goBack}>
-              <Chevron />
-            </BackButton>
-          )}
-          <HeaderTexts leftOffset={history.length === 1 ? 16 : 0}>
-            <Title>{history[history.length - 1].title}</Title>
-            <Subtitle>{history[history.length - 1].subtitle}</Subtitle>
-          </HeaderTexts>
-          <CloseButton onClick={closeOverlay}>
-            <Close />
-          </CloseButton>
-        </OverlayHeader>
-        <OverlayContentView
-          ref={overlayContentViewEl}
-          displayHeader={history[history.length - 1].displayHeader}
-          onTransitionEnd={resetTransitionState}
-        >
-          {history.map((item, index) => (
-            <OverlayContent
-              key={index}
-              data-index={index}
-              visible={currentViewIdx === index}
-              isInTransition={isInTransition}
-            >
-              <OverlayContentContainer
-                ref={(overlayContentContainerEl) =>
-                  (overlayContentRefs.current[
-                    index
-                  ] = overlayContentContainerEl)
-                }
+          <OverlayHeader
+            ref={overlayHeaderEl}
+            visible={currentViewObj.displayHeader}
+          >
+            {history.length > 1 && (
+              <BackButton onClick={goBack}>
+                <Chevron />
+              </BackButton>
+            )}
+            <HeaderTexts leftOffset={history.length === 1 ? 16 : 0}>
+              <Title>{currentViewObj.title}</Title>
+              <Subtitle>{currentViewObj.subtitle}</Subtitle>
+            </HeaderTexts>
+            <CloseButton onClick={closeOverlay}>
+              <Close />
+            </CloseButton>
+          </OverlayHeader>
+          <OverlayContentView
+            ref={overlayContentViewEl}
+            displayHeader={currentViewObj.displayHeader}
+            onTransitionEnd={resetTransitionState}
+          >
+            {history.map((item, index) => (
+              <OverlayContent
+                key={index}
+                data-index={index}
+                visible={currentViewIdx === index}
+                isInTransition={isInTransition}
               >
-                {item.renderedView}
-              </OverlayContentContainer>
-            </OverlayContent>
-          ))}
-        </OverlayContentView>
-      </OverlayWrapper>
-    </Container>
+                <OverlayContentContainer
+                  ref={(overlayContentContainerEl) =>
+                    (overlayContentRefs.current[
+                      index
+                    ] = overlayContentContainerEl)
+                  }
+                >
+                  {item.renderedView}
+                </OverlayContentContainer>
+              </OverlayContent>
+            ))}
+          </OverlayContentView>
+        </OverlayWrapper>
+      </Container>
+    </>
   );
 };
 

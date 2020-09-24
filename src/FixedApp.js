@@ -17,7 +17,7 @@ const Viewport = styled.div`
 `;
 
 export default function App() {
-  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(true);
   const [isOverlayVisible2, setIsOverlayVisible2] = useState(false);
   const showOverlay = () => {
     setIsOverlayVisible(true);
@@ -51,13 +51,13 @@ export default function App() {
       <Overlay
         visible={isOverlayVisible}
         hide={hideOverlay}
-        width={{ tablet: 440 }}
-        height={{ tablet: 536 }}
         view={{
           title: 'Gifts',
           subtitle: '132 Gifts',
           content: View1,
-          preventClose: false
+          preventClose: false,
+          width: { tablet: 440 },
+          height: { mobile: 300, tablet: 536 }
         }}
       />
     </>
