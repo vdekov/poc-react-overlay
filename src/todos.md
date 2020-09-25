@@ -4,9 +4,10 @@
 - ~~handle multi views navigation - back button~~
 - ~~desktop - default behavior popup~~
   - ~~tablet behaivor~~
-  - add params to overwrite
 - ~~add ellipsis titles~~
 - ~~extend modal popup click area to prevent backdrop click (close)~~
-- set fixed dimensions
+- ~~set fixed dimensions~~
 - ~~pass `back` function to the nested views~~
 - ~~prevent close confirmation in the views~~
+- implement desktop corner case
+- handle `env(safe-area-inset-top)`

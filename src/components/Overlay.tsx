@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { Helmet } from 'react-helmet';
 
-import { tablet } from '../utils/style_breakpoints';
+import { tablet, desktop } from '../utils/style_breakpoints';
 import useDelayedUnmount from '../hooks/useDelayedUnmount';
 import { ViewProps, ContentComponentProps, DimensionProps } from '../types';
 import { Chevron, Close } from './Icons';
@@ -12,8 +12,13 @@ const TRANSITION_DURATION = '0.5s';
 const DEFAULT_OVERLAY_WIDTH = 400;
 const DEFAULT_OVERLAY_HEIGHT = 400;
 
-const Container = styled.div``;
-const Backdrop = styled.div<{ visible: boolean }>`
+const Container = styled.div`
+  height: 100%;
+`;
+const Backdrop = styled.div<{
+  visible: boolean;
+  inline: boolean;
+}>`
   position: fixed;
   top: 0;
   right: 0;
@@ -22,11 +27,16 @@ const Backdrop = styled.div<{ visible: boolean }>`
   background-color: #bbb;
   opacity: ${(props) => (props.visible ? 0.8 : 0)};
   transition: opacity 0.5s;
+
+  ${desktop} {
+    display: ${(props) => props.inline && 'none'};
+  }
 `;
 const OverlayWrapper = styled.div<{
   width: DimensionProps;
   height: DimensionProps;
   visible: boolean;
+  inline: boolean;
 }>`
   position: fixed;
   right: 0;
@@ -73,11 +83,28 @@ const OverlayWrapper = styled.div<{
     position: absolute;
     z-index: -1;
   }
+
+  /* Desktop */
+  ${desktop} {
+    position: ${(props) => props.inline && 'static'};
+    max-width: ${(props) => props.inline && '100%'};
+    max-height: ${(props) => props.inline && '100%'};
+    height: ${(props) => props.inline && '100%'};
+    transform: ${(props) => props.inline && 'translate(0)'};
+    transition: ${(props) => props.inline && 'all 0.01s'};
+    box-shadow: ${(props) =>
+      props.inline && '0px 2px 8px rgba(31, 32, 33, 0.1)'};
+
+    &:before {
+      display: ${(props) => props.inline && 'none'};
+    }
+  }
 `;
 const OverlayHeader = styled.div<{ visible: boolean }>`
   display: ${(props) => (props.visible ? 'flex' : 'none')};
   align-items: center;
   min-height: 54px;
+  height: 54px;
   border-bottom: 2px solid rgba(45, 40, 103, 0.1);
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
@@ -120,7 +147,10 @@ const CloseButton = styled.div`
   height: 100%;
   cursor: pointer;
 `;
-const OverlayContentView = styled.div<{ displayHeader: boolean }>`
+const OverlayContentView = styled.div<{
+  inline: boolean;
+  displayHeader: boolean;
+}>`
   position: relative;
   display: flex;
   overflow: hidden;
@@ -132,6 +162,11 @@ const OverlayContentView = styled.div<{ displayHeader: boolean }>`
     transition: width ${TRANSITION_DURATION}, height ${TRANSITION_DURATION};
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
+  }
+
+  ${desktop} {
+    height: ${(props) => props.inline && '100%'};
+    transition: ${(props) => props.inline && 'width 0.01s, height 0.01s'};
   }
 `;
 const OverlayContent = styled.div<{
@@ -155,6 +190,7 @@ interface OwnProps {
   visible: boolean;
   hide: () => void;
   view: ViewProps;
+  inline?: boolean;
 }
 type Props = OwnProps;
 
@@ -227,6 +263,10 @@ const Overlay: React.FC<Props> = (props) => {
   };
 
   const back = () => {
+    // Do not allow the user to go back from the initial view.
+    if (currentViewIdx < 0) {
+      return;
+    }
     goBack();
   };
 
@@ -318,6 +358,10 @@ const Overlay: React.FC<Props> = (props) => {
   };
 
   const destroy = () => {
+    // Make sure the transition for visually hiding the overlay is already finished.
+    if (visibility) {
+      return;
+    }
     unmount();
     // Make sure to reset the overlay state to the initial view.
     ref.current = initialHistory;
@@ -342,12 +386,14 @@ const Overlay: React.FC<Props> = (props) => {
         <Backdrop
           onClick={closeOverlay}
           visible={visibility}
-          onTransitionEnd={destroy}
+          inline={props.inline}
         />
         <OverlayWrapper
           width={overlayWidth}
           height={overlayHeight}
           visible={visibility}
+          inline={props.inline}
+          onTransitionEnd={destroy}
         >
           <OverlayHeader
             ref={overlayHeaderEl}
@@ -368,6 +414,7 @@ const Overlay: React.FC<Props> = (props) => {
           </OverlayHeader>
           <OverlayContentView
             ref={overlayContentViewEl}
+            inline={props.inline}
             displayHeader={currentViewObj.displayHeader}
             onTransitionEnd={resetTransitionState}
           >
